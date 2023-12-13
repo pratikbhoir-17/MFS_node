@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context-4.0.xsd
+		http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+		http://www.springframework.org/schema/tx 
+    http://www.springframework.org/schema/tx/spring-tx.xsd"
+	default-autowire="byName">
+
+	<tx:annotation-driven />
+
+	<context:property-placeholder location="classpath:/db.properties" />
+
+	<context:annotation-config />
+
+	<context:component-scan base-package="com.mfs.node.*" />
+
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="${database.driver}" />
+		<property name="url" value="${database.url}" />
+		<property name="username" value="${database.user}" />
+		<property name="password" value="${database.password}" />
+		<property name="maxIdle" value="${pool.maxSize}" />
+		<property name="minIdle" value="${pool.minSize}" />
+		<property name="initialSize" value="${pool.intialSize}" />
+
+		<property name="testOnBorrow" value="true" />
+		<property name="validationQuery" value="select 1 as dbcp_connection_test" />
+		<property name="removeAbandoned" value="true" />
+		<property name="removeAbandonedTimeout" value="55" />
+	</bean>
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="packagesToScan" value="com.mfs.node.dao.model" />
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.show_sql">false</prop>
+				<prop key="hibernate.connection.zeroDateTimeBehavior">convertToNull</prop>
+
+			</props>
+		</property>
+	</bean>
+
+	<!-- remote connection -->
+	<bean id="remoteDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${remote_db.driverClassName}" />
+		<property name="url" value="${remote_db.url}" />
+		<property name="username" value="${remote_db.username}" />
+		<property name="password" value="${remote_db.password}" />
+	</bean>
+
+	<!-- local connection -->
+	<bean id="localDataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${database.driver}" />
+		<property name="url" value="${database.url}" />
+		<property name="username" value="${database.user}" />
+		<property name="password" value="${database.password}" />
+	</bean>
+
+
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+
+	<tx:annotation-driven transaction-manager="transactionManager"
+		proxy-target-class="true" />
+
+</beans>
